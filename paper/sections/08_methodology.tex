@@ -1,0 +1,73 @@
+\section{Proposed Methodology}
+\label{sec:methodology}
+
+This section converts the gaps of \S\ref{sec:gaps} into an operational methodology.
+The design is intentionally narrow: it prioritises \emph{causal attribution} of bitstream quality over breadth of tasks.
+
+\subsection{Design principles}
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Measure quality, do not assume it.}
+  Each bitstream receives Stage~A scores (cheap statistical suite; NIST/TestU01 when data volume allows; optional neural distinguisher~\cite{valle2024assessing}) and a tier label $T0$--$T4$.
+
+  \item \textbf{Isolate one stochastic site.}
+  Following the control logic of Summers and Dinneen~\cite{summers2021nondeterminism}, when site $i$ is under test, all sites $j\neq i$ are frozen (fixed PRNG seeds), the train/test split is fixed, and confirmatory runs use deterministic compute kernels where possible~\cite{zhuang2022randomness}.
+
+  \item \textbf{Power the comparison.}
+  Use a predefined run index set, non-parametric tests (Brunner--Munzel), effect sizes (Cliff's $\delta$ / stochastic superiority), and $n\geq 25$ when expected gaps are below $2.5\%$~\cite{akesson2024reporting}.
+
+  \item \textbf{Forbid silent wraparound.}
+  Confirmatory runs must not recycle a short buffer without logging; byte consumption is an audit field.
+\end{enumerate}
+
+\subsection{Independent and dependent variables}
+
+\begin{table}[t]
+\centering
+\caption{Core methodological variables.}
+\label{tab:vars}
+\begin{tabular}{@{}p{3.4cm}p{8.4cm}@{}}
+\toprule
+\textbf{Variable} & \textbf{Operationalisation} \\
+\midrule
+Bitstream quality & Stage~A scores + tier $T0$--$T4$; source identity recorded but not used as the sole factor \\
+Stochastic site & Dropout masks; data shuffle; weight init; (later) augmentation \\
+Optimiser & SGD vs.\ Adam with fixed hyperparameters within a comparison cell \\
+Task & Fashion-{MNIST} MLP (pilot); CIFAR-10 / noisy tabular (main) \\
+Outcomes & Test accuracy / F1, train--test gap, curve AUC, run-to-run IQR \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Bitstream consumption interface}
+
+We require a \texttt{BitstreamRNG} that memory-maps or streams a binary archive and exposes uniform draws, Bernoulli masks, shuffles, and Gaussian transforms derived from those uniforms.
+Quality is therefore a property of the \emph{file}, not of an opaque framework seed.
+Starting offsets / shards provide replication structure without reseeding a classical PRNG that would bypass the archive.
+
+\subsection{Priority experiments}
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Negative-control gate (dropout).}
+  Biased bits ($p=0.6$) versus OS CSPRNG drive dropout only; $n=10$.
+  Pipeline validity requires a detectable difference in accuracy, gap, or dispersion.
+
+  \item \textbf{Quality ladder (dropout).}
+  Weak LCG, MT19937-class stream, CSPRNG, and a large-archive shard; same isolation; escalate to $n\geq 25$ if gaps are small.
+
+  \item \textbf{Optimiser interaction (shuffle).}
+  Cross shuffle-bitstream quality with $\{\mathrm{SGD},\mathrm{Adam}\}$ to test whether adaptive methods amplify or damp bitstream defects in gradient noise---addressing gap~G3.
+
+  \item \textbf{Initialisation replication cell.}
+  Init-only ablation in the style of Bird et al.~\cite{bird2019softcomputing} and Heese et al.~\cite{heese2024biased}, but with published Stage~A scores attached to every source.
+\end{enumerate}
+
+\subsection{What this methodology deliberately defers}
+
+Full Crush batteries on undersized pilots; joint multi-site archive injection; large hyperparameter sweeps; and metaheuristic suites are deferred until the dropout negative-control gate passes.
+Quasi-random mini-batch schedules and neural distinguishers are optional enrichments, not blockers.
+
+\subsection{Claim policy}
+
+A result may be stated as a \emph{quality effect} only if Stage~A scores differ across compared sources, a single site was ablated, wraparound policy is stated, and the statistical protocol above is followed.
+Null results among $T2$--$T4$ sources are considered scientifically informative when adequately powered.

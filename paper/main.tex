@@ -1,0 +1,84 @@
+\documentclass[11pt,a4paper]{article}
+
+% ---- Encoding & fonts ----
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+
+% ---- Layout ----
+\usepackage[margin=1in]{geometry}
+\usepackage{setspace}
+\onehalfspacing
+
+% ---- Math & tables ----
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{tabularx}
+\usepackage{array}
+
+% ---- Figures & graphics ----
+\usepackage{graphicx}
+\usepackage{xcolor}
+
+% ---- Lists & typography ----
+\usepackage{enumitem}
+\usepackage{microtype}
+\usepackage{hyperref}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!50!black,
+  citecolor=blue!50!black,
+  urlcolor=blue!60!black
+}
+
+% ---- Bibliography ----
+\usepackage[numbers,sort&compress]{natbib}
+\bibliographystyle{plainnat}
+
+% ---- Theorem-like environments ----
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{remark}{Remark}
+
+\title{%
+  Randomness Quality in Machine Learning and Stochastic Optimisation:\\
+  A Critical Literature Review and Research Agenda
+}
+\author{%
+  % Authors to be filled
+  Anonymous / Project Randomness
+}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Random numbers underpin nearly every stochastic component of modern machine learning (ML) and optimisation: weight initialisation, mini-batch sampling, dropout and other stochastic regularisers, data augmentation, evolutionary operators, and the noise that shapes the trajectory of stochastic gradient methods.
+Despite this centrality, the \emph{statistical quality} of the underlying random bitstreams---as opposed to the mere presence of a seed---remains inconsistently measured, inconsistently controlled, and inconsistently reported.
+This paper provides a critical review of the literature at the intersection of random number generation (RNG) quality, deep learning training pipelines, and stochastic / metaheuristic optimisation.
+We synthesise evidence from (i)~classical and quantum RNG characterisation, (ii)~empirical studies that substitute pseudo-random, true-random, and quantum-random sources into neural training, (iii)~theory and empirics on how gradient noise structures the solutions found by SGD and adaptive optimisers, and (iv)~metaheuristic studies of RNG quality in genetic algorithms, particle swarm optimisation, and differential evolution.
+Our critique highlights contradictory findings (notably on quantum versus classical initialisation), pervasive underpowering and confounded experimental designs, and a persistent gap between \emph{cryptographic / statistical} notions of randomness quality and the \emph{geometry-aware} noise that matters for optimiser dynamics.
+We conclude with a structured research agenda for comparing large binary random archives in AI/ML tasks under isolated stochastic sites, multi-seed statistics, and explicit quality tiers.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+\input{sections/01_introduction}
+\input{sections/02_background}
+\input{sections/03_rng_in_ml}
+\input{sections/04_randomness_optimisation}
+\input{sections/05_critical_synthesis}
+\input{sections/06_research_gaps}
+\input{sections/08_methodology}
+\input{sections/07_agenda}
+
+\section*{Acknowledgements}
+This review was prepared as part of the Randomness project experimental programme.
+% Add funding / collaborators as appropriate.
+
+\bibliography{refs}
+
+\end{document}

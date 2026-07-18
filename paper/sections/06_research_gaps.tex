@@ -1,0 +1,69 @@
+\section{Research Gaps}
+\label{sec:gaps}
+
+We state gaps as falsifiable absences in the literature.
+
+\subsection{G1 --- No shared quality$\to$utility benchmark}
+
+There is no community benchmark that (a)~publishes fixed random bit archives at multiple quality tiers, (b)~defines isolated stochastic-site hooks in reference trainers, and (c)~reports multi-seed metrics with pre-registered tests.
+Existing papers each bring private streams and private tasks, preventing meta-analysis.
+
+\subsection{G2 --- Missing isolation of stochastic sites}
+
+Dropout-quality~\cite{koivu2022dropout} and initialisation-quality~\cite{bird2019softcomputing,heese2024biased} are studied separately; shuffle-quality and augmentation-quality almost not at all.
+A full factorial (or at least one-site-at-a-time) design across S1--S4 (\S\ref{sec:background}) is absent.
+
+\subsection{G3 --- Optimiser$\times$RNG interaction untested}
+
+Despite rich theory on SGD versus Adam noise~\cite{zhou2020adamsgd,liu2020radam,wu2022alignment}, we found no controlled study that crosses optimiser family with measured bitstream quality of the shuffle/mask generator while holding all else fixed.
+This is perhaps the highest-value gap for connecting the two literatures.
+
+\subsection{G4 --- No task-relevant quality metric}
+
+NIST/TestU01 failures do not map monotonically to accuracy deltas~\cite{antunes2025influence}.
+Neural distinguishers~\cite{valle2024assessing} measure predictability, not optimiser utility.
+Needed: metrics that predict downstream ML/optimiser sensitivity (e.g., estimated bias in mini-batch index distributions; autocorrelation at batch-scale lags; effective entropy consumed per epoch).
+
+\subsection{G5 --- Scale mismatch}
+
+Pilot studies use kilobytes to megabytes of random data.
+Modern training can consume gigabytes of random bits across epochs (dropout masks alone).
+Whether quality defects that appear only at Crush/BigCrush scales affect long training runs is unknown.
+Large binary archives are uniquely suited to close this gap---yet remain under-used in published ML experiments.
+
+\subsection{G6 --- Replication crisis on QRNG claims}
+
+The Bird versus Heese disagreement~\cite{bird2019softcomputing,heese2024biased} is unresolved by direct, pre-registered replication on shared tasks with shared quality diagnostics.
+Until then, QRNG-advantage claims should be treated as hypothesis-generating, not established.
+
+\subsection{G7 --- Metaheuristics and deep learning are siloed}
+
+PSO/GA/DE studies converged early on ``minimum quality suffices''~\cite{bastos2009pso,ma2014comparison}, while deep learning discussions rediscover similar ideas a decade later~\cite{antunes2025influence}.
+Cross-domain synthesis---and tests of quasi-random versus pseudo-random \emph{mini-batch schedules}---are rare.
+
+\subsection{G8 --- Reporting standards}
+
+Papers seldom report: bytes consumed, wraparound policy, bit ordering, exact seeding maps, GPU determinism flags, or effect sizes with confidence intervals.
+Without these, RNG-quality science cannot accumulate.
+
+\subsection{Gap priority matrix}
+
+\begin{table}[t]
+\centering
+\caption{Gap priorities for a bitstream-centred experimental programme.}
+\label{tab:gap-priority}
+\begin{tabular}{@{}clp{7.5cm}@{}}
+\toprule
+\textbf{ID} & \textbf{Priority} & \textbf{Rationale} \\
+\midrule
+G1 & High & Enables cumulative science \\
+G2 & High & Removes attribution confounds \\
+G3 & High & Links RNG quality to optimiser theory \\
+G4 & Medium & Needs iterative metric design \\
+G5 & High & Motivates large archives \\
+G6 & Medium & Clarifies QRNG narrative \\
+G7 & Medium & Broadens optimisation coverage \\
+G8 & High & Cheap to adopt; high leverage \\
+\bottomrule
+\end{tabular}
+\end{table}

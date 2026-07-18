@@ -1,0 +1,79 @@
+\section{Background: Randomness, Quality, and Where It Enters Learning Systems}
+\label{sec:background}
+
+\subsection{Sources of randomness}
+
+\begin{definition}[PRNG]
+A \emph{pseudorandom number generator} is a deterministic algorithm that expands a short seed into a long sequence intended to be computationally indistinguishable from i.i.d.\ uniform draws for a target class of statistical tests or adversaries.
+\end{definition}
+
+\begin{definition}[TRNG / physical RNG]
+A \emph{true} (physical) random number generator harvests entropy from a classical physical process (thermal noise, jitter, etc.), typically followed by conditioning / extraction.
+\end{definition}
+
+\begin{definition}[QRNG]
+A \emph{quantum} random number generator harvests unpredictability justified by quantum measurement (e.g., photon arrival, vacuum fluctuations, phase noise)~\cite{herrero2017quantum,mannalath2022qrng}.
+\end{definition}
+
+In ML practice, the dominant sources are software PRNGs shipped with NumPy, PyTorch, and TensorFlow (historically Mersenne Twister; increasingly Philox / PCG-class counter-based generators)~\cite{antunes2025statistical,antunes2024reproducibility}.
+Hardware TRNG/QRNG streams appear mainly in research substitutions~\cite{bird2019softcomputing,koivu2022dropout,heese2024biased}.
+
+\subsection{What ``quality'' means}
+
+The literature uses several non-equivalent notions:
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Uniformity and independence tests.}
+  Batteries such as NIST~SP~800-22, Dieharder, and TestU01 SmallCrush/Crush/BigCrush~\cite{bassham2010nist,lecuyer2007testu01} report $p$-values against specific alternatives (bias, runs, serial correlation, linear complexity, etc.).
+  Passing is necessary but not sufficient for cryptographic use~\cite{soto1999statistical}.
+
+  \item \textbf{Entropy / min-entropy.}
+  Especially for physical sources after digitisation; post-processing aims to extract near-uniform bits~\cite{herrero2017quantum}.
+
+  \item \textbf{Predictability / next-bit hardness.}
+  Cryptographic security notions; relevant when adversaries may recover seeds~\cite{dahiya2024mlrandomness}.
+
+  \item \textbf{ML distinguishability.}
+  Neural networks trained to classify windows of bits against a ``golden'' reference~\cite{valle2024assessing}; longer windows and CNNs tend to be more discriminative for weak PRNGs.
+
+  \item \textbf{Task-level utility.}
+  Downstream accuracy, calibration, or convergence speed when the stream is injected into an ML or optimisation algorithm~\cite{bird2019softcomputing,koivu2022dropout,bastos2009pso}.
+\end{enumerate}
+
+\begin{remark}
+These notions can disagree.
+A stream that fails Crush may still train an MNIST MLP indistinguishably from \texttt{os.urandom}; conversely, a stream that passes NIST may still be a poor match to the \emph{anisotropic} noise SGD ``wants'' for flat-minima selection (\S\ref{sec:opt}).
+Conflating cryptographic quality with optimisation utility is a central conceptual gap (\S\ref{sec:gaps}).
+\end{remark}
+
+\subsection{Stochastic sites in modern ML pipelines}
+
+Following tooling analyses~\cite{zhuang2022randomness,summers2021nondeterminism}, we partition randomness into sites that can be ablated independently:
+
+\begin{table}[t]
+\centering
+\caption{Primary stochastic sites in neural training pipelines.}
+\label{tab:sites}
+\begin{tabular}{@{}llp{6.2cm}@{}}
+\toprule
+\textbf{ID} & \textbf{Site} & \textbf{Role of randomness} \\
+\midrule
+S1 & Weight / bias initialisation & Sets the starting point on a non-convex loss; interacts with activation scale (Xavier/He) \\
+S2 & Stochastic regularisation & Dropout, DropConnect, stochastic depth masks \\
+S3 & Data order / mini-batches & Induces gradient noise in SGD-family methods \\
+S4 & Data augmentation & Random crops, flips, colour jitter, MixUp, etc. \\
+S5 & Optimiser internals & Rare explicit noise (e.g., Langevin); Adam's early-step variance is data-dependent, not RNG-seeded in the usual sense~\cite{liu2020radam} \\
+S6 & Evaluation / decoding & Temperature sampling, stochastic beams (inference-time) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Population-based methods add further sites: population initialisation, crossover/mutation draws, and velocity/position perturbations in PSO~\cite{bastos2009pso,cantu2008rngga}.
+
+\subsection{Seed sensitivity versus generator quality}
+
+Changing the \emph{seed} of a fixed PRNG re-samples the same distributional family.
+Changing the \emph{generator} (or feeding bits from a physical archive) can change bias, correlation structure, period, and lattice artefacts.
+Most reproducibility papers study the former~\cite{picard2021torch,bethard2022seeds}; only a thinner literature studies the latter~\cite{bird2019softcomputing,koivu2022dropout,heese2024biased,antunes2025influence}.
+Both matter, but they answer different scientific questions.
+A valid RNG-quality study must hold the experimental design fixed while varying measured quality---not merely re-seeding.
