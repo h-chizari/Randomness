@@ -1,0 +1,34 @@
+# Register random bit sources for experiments.
+# Point `path` at pilot files or your large archives under data/random_bits/large/.
+
+sources:
+  - id: biased_p60
+    path: data/random_bits/biased_p60_64kib.bin
+    tier_hint: T0
+    notes: Negative control; Bernoulli(p=0.6) bits.
+
+  - id: weak_lcg
+    path: data/random_bits/weak_lcg_64kib.bin
+    tier_hint: T1
+    notes: Numerical Recipes LCG (byte stream).
+
+  - id: xorshift32
+    path: data/random_bits/xorshift32_64kib.bin
+    tier_hint: T1
+    notes: Lightweight PRNG.
+
+  - id: mt19937_python
+    path: data/random_bits/mt19937_python_64kib.bin
+    tier_hint: T2
+    notes: Python random / MT19937-style stream.
+
+  - id: os_urandom
+    path: data/random_bits/os_urandom_64kib.bin
+    tier_hint: T3
+    notes: OS CSPRNG reference.
+
+  # Example for your large archive (create the directory and file locally):
+  # - id: my_archive_a
+  #   path: data/random_bits/large/my_archive_a/shard000.bin
+  #   tier_hint: T4
+  #   notes: User-provided high-volume random bits.
