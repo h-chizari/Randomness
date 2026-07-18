@@ -21,6 +21,14 @@ See **[`paper/`](paper/)** for a LaTeX critical review covering RNG quality in M
 cd paper && pdflatex main && bibtex main && pdflatex main && pdflatex main
 ```
 
+## Methodology (focus)
+
+See **[docs/METHODOLOGY.md](docs/METHODOLOGY.md)** for what to prioritise:
+
+1. Measure quality → isolate one stochastic site → powered stats
+2. Start with **dropout**, then **shuffle × {SGD, Adam}**
+3. Negative-control gate (`biased` vs `urandom`) before claiming nulls
+
 ## Experiment plan
 
 See **[docs/EXPERIMENT_PLAN.md](docs/EXPERIMENT_PLAN.md)** for:
