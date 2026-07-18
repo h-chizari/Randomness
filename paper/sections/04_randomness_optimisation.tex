@@ -1,0 +1,98 @@
+\section{Randomness and Optimisation Methods}
+\label{sec:opt}
+
+Optimisation is where randomness stops being a mere implementation detail and becomes part of the algorithm's inductive bias.
+We separate \emph{first-order stochastic optimisation} (SGD family) from \emph{population-based metaheuristics}, then discuss adaptive methods and open coupling questions.
+
+\subsection{SGD noise, flat minima, and generalisation}
+
+\subsubsection{Batch noise as implicit regularisation}
+
+Keskar et al.~\cite{keskar2017largebatch} popularised the observation that large-batch training often generalises worse than small-batch training, correlating the gap with convergence to sharper minima.
+The standard interpretation is that mini-batch sampling injects noise into gradient estimates; smaller batches increase that noise and favour flatter regions.
+
+Smith and Le~\cite{smith2018bayesian} cast this in a Bayesian light, identifying a noise scale
+\begin{equation}
+  g \approx \varepsilon \frac{N}{B},
+\end{equation}
+with learning rate $\varepsilon$, dataset size $N$, and batch size $B$.
+Holding $\varepsilon$ fixed, there exists an intermediate batch size that maximises test performance---too little noise (large $B$) harms generalisation; too much can harm optimisation.
+
+Zhu et al.~\cite{zhu2019anisotropic} emphasise that SGD noise is \emph{anisotropic}: its covariance structure, not only its scalar magnitude, governs escape from sharp minima.
+Wu et al.~\cite{wu2022alignment} prove a stability viewpoint: for over-parameterised models with square loss, linear stability of a minimum under SGD constrains the Frobenius norm of the Hessian in terms of batch size and learning rate, exploiting an alignment property whereby noise concentrates along sharp directions and scales with loss.
+Related work on dynamical stability further links large learning rates to flatness-seeking behaviour~\cite{wu2023implicit}.
+
+\begin{remark}[Implication for RNG quality]
+Almost all of this theory models gradient noise as arising from \emph{uniform sampling of data} (or with replacement approximations), not from defects in the PRNG that implements the shuffle.
+If the shuffle RNG is biased or low-period, the induced noise covariance could deviate from the assumed structure---a theoretically motivated but largely untested pathway from bitstream quality to optimiser geometry.
+\end{remark}
+
+\subsubsection{SGD versus adaptive methods}
+
+Adaptive methods (Adam, RMSProp, etc.) reshape effective step sizes per coordinate.
+Zhou et al.~\cite{zhou2020adamsgd} analyse why SGD often generalises better than Adam, relating escape behaviour and noise tails to flatter minima.
+Liu et al.~\cite{liu2020radam} show that Adam's early adaptive learning-rate estimates have undesirably large variance when few samples have been seen, motivating warmup and Rectified Adam (RAdam).
+Here the ``randomness'' is primarily \emph{data-order stochasticity} feeding moment estimates, again mediated by shuffling RNGs and batch construction.
+
+Empirically, comparisons of optimisers that ignore seed variance are unreliable: optimiser rankings can flip across seeds when effect sizes are small~\cite{akesson2024reporting,picard2021torch}.
+Any study claiming that RNG quality interacts with optimiser choice (e.g., Adam benefits more from high-entropy shuffles than SGD) must therefore use multi-seed, multi-run designs.
+
+\subsection{Explicit noise injection optimisers}
+
+Beyond mini-batch noise, several methods inject randomness deliberately:
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Stochastic Langevin / SGLD} add Gaussian noise scaled to mimic posterior sampling.
+  \item \textbf{Gradient noise / parameter noise} exploration in reinforcement learning.
+  \item \textbf{Entropy-regularised / noisy networks} policies.
+\end{itemize}
+For these algorithms, the distributional form of the injected noise is part of the method.
+Substituting a non-Gaussian or correlated bitstream (via inverse-CDF transforms of biased bits) would constitute a meaningful ablation; we found little systematic work that varies \emph{bitstream quality} while keeping the intended noise law fixed through proper sampling transforms.
+This is a concrete experimental gap (\S\ref{sec:gaps}).
+
+\subsection{Metaheuristic and evolutionary optimisation}
+
+Population-based methods consume large volumes of random numbers for initialisation and variation operators.
+
+\subsubsection{Particle swarm optimisation (PSO)}
+
+Bastos-Filho et al.~\cite{bastos2009pso} compare multiple RNGs (LCG variants and Marsaglia-type generators) across PSO topologies.
+Their influential conclusion: PSO requires a \emph{minimum} RNG quality, but medium- and high-quality generators show no significant further gains.
+GPU PSO studies similarly find that lightweight generators such as xorshift can be ``good enough'' when they clear basic statistical bars~\cite{bastos2010gpupso}.
+Ma et al.~\cite{ma2014comparison} compare many library RNGs on GPU PSO with league-scoring protocols; differences exist but are function-dependent and often small among competent generators.
+
+\subsubsection{Genetic algorithms and quasi-random initialisation}
+
+Studies substituting pseudo- and \emph{quasi}-random sequences (Sobol, Halton, Niederreiter) for GA initial populations show that space-filling properties can matter more than fine differences among PRNGs, because early exploration depends on covering the search domain~\cite{cantu2008rngga,maaranen2004quasi}.
+Reported rankings of generators are problem-dependent for constrained and unconstrained benchmarks---already a warning against universal claims~\cite{cantu2008rngga}.
+
+\subsubsection{Differential evolution and hybrids}
+
+Studies of DE/PSO hybrids under different PRNG quality levels report that weaker LCGs are only slightly worse than stronger generators in some office-solver settings, occasionally even improving convergence---consistent with the broader pattern that once catastrophic generators are excluded, effects are small and non-monotone~\cite{angelova2021de}.
+
+\begin{remark}[Critical reading]
+Metaheuristic RNG papers often vary generator algorithms without publishing NIST/TestU01 profiles of the exact streams consumed, and rarely power their comparisons for small effects.
+Still, their repeated ``minimum quality threshold'' finding is strikingly consistent with Antunes et al.'s ML conclusion~\cite{antunes2025influence} and with Heese et al.'s null QRNG result~\cite{heese2024biased}.
+\end{remark}
+
+\subsection{Cross-cutting picture for optimisation}
+
+\begin{table}[t]
+\centering
+\caption{How randomness interacts with major optimiser families.}
+\label{tab:opt-map}
+\begin{tabular}{@{}p{3.2cm}p{4.2cm}p{4.4cm}@{}}
+\toprule
+\textbf{Family} & \textbf{Primary randomness} & \textbf{Documented quality sensitivity} \\
+\midrule
+Mini-batch SGD & Data sampling / shuffle & Strong theory for noise \emph{structure}; little direct RNG-quality ablation \\
+Adam / adaptive & Shuffle + moment estimation & Early-step variance issues~\cite{liu2020radam}; seed-sensitive rankings \\
+Langevin-type & Explicit isotropic/anisotropic noise & Sensitive to noise law; bitstream quality rarely tested \\
+PSO / DE / GA & Init + movement operators & Clear floor effects for weak RNGs; flat above medium quality~\cite{bastos2009pso,ma2014comparison} \\
+Bayesian opt.\ / bandits & Acquisition sampling & Under-explored w.r.t.\ RNG quality \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Overall, optimisation research offers a sharper mechanistic story than ML substitution studies: \emph{structured} noise changes which solutions are stable.
+But it almost never measures whether the RNG that implements sampling preserves that structure.
+Bridging these literatures is a priority gap.

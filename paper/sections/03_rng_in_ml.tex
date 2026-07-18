@@ -1,0 +1,74 @@
+\section{Random Number Quality in Machine Learning: Empirical Landscape}
+\label{sec:rngml}
+
+\subsection{Weight initialisation: QRNG versus PRNG}
+
+Bird et al.~\cite{bird2019softcomputing} compared CPU PRNG and QPU-derived QRNG initialisation across dense and convolutional networks.
+They report task-dependent gaps: negligible on MNIST ($\approx 0.02\%$), larger on CIFAR-10 ($\approx +0.92\%$ for QRNG) and mental-state EEG ($\approx +2.82\%$), with qualitatively different learning curves.
+The authors conclude that the two sources are ``inexplicably'' distinguishable in soft computing practice despite theoretical expectations that high-quality PRNGs should be interchangeable with true randomness for these scales.
+
+Heese et al.~\cite{heese2024biased} directly challenge the narrative of systematic QRNG advantage.
+Using hardware-biased quantum random numbers from real devices, unbiased QRNG, classical PRNG, and a classical generator engineered to match hardware bias, they find \emph{no statistically significant} effect of RNG choice on CNN and RNN initialisation.
+They explicitly note failure to replicate Bird et al.'s claim under different but ``typical'' neural setups.
+
+\begin{remark}[Critical reading]
+The Bird--Heese tension is the clearest illustration that the field lacks standardised protocols.
+Neither line of work fully isolates quality metrics of the bitstreams (NIST/TestU01 profiles) as covariates; sample sizes are modest relative to the small claimed effect sizes; and data-split randomness often co-varies with initialisation.
+Until studies jointly report (a)~bitstream quality scores, (b)~fixed splits, (c)~$\geq 25$ seeds for sub-$2.5\%$ effects~\cite{akesson2024reporting}, claims of QRNG superiority remain provisional.
+\end{remark}
+
+\subsection{Dropout and stochastic regularisation}
+
+Koivu et al.~\cite{koivu2022dropout} replace the RNG driving node dropout with generators of varying statistical quality, including true random sources, across four classification tasks.
+Their central finding is nuanced: true/high-quality randomness can be \emph{advantageous or disadvantageous} for overfitting, depending on dataset and hyper-parameters.
+This is one of the few studies that treats RNG quality as a first-class experimental factor for a site other than initialisation.
+
+Related work on contextual neural networks also reports sensitivity to the choice of generator during training~\cite{huk2021contextual}.
+However, mechanism remains unclear: is the effect mediated by mask correlation structure, effective regularisation strength, or finite-sample artefacts of short random buffers?
+
+\subsection{Framework PRNGs: statistical quality and reproducibility}
+
+Antunes and collaborators~\cite{antunes2025statistical,antunes2024reproducibility} stress-test the PRNGs embedded in NumPy, PyTorch, and TensorFlow against reference C implementations using TestU01 BigCrush on hundreds of streams.
+Key findings:
+\begin{itemize}[leftmargin=*]
+  \item Generators marketed as ``crush-resistant'' (PCG, Philox) can still fail individual tests under some configurations.
+  \item Framework integrations do not always match native failure profiles---implementation and seeding (seed$\to$state maps) matter.
+  \item Cross-framework numerical reproducibility fails even for ``the same'' algorithm and seed, because seeding functions differ.
+\end{itemize}
+A follow-on study on the influence of RNG quality in stochastic simulation and ML~\cite{antunes2025influence} argues that, \emph{above a robustness threshold}, PRNG choice is often dominated by performance and convenience, while \emph{low-quality} generators can inject systematic error.
+This ``threshold'' view is important: it predicts flat task metrics among strong generators and sharp degradation only for weak/biased ones---a hypothesis our proposed experiments are designed to test.
+
+\subsection{Neural networks as RNG assessors}
+
+Valle et al.~\cite{valle2024assessing} reverse the usual direction: they train CNNs and LSTMs to distinguish candidate RNG outputs from a golden-standard RNG.
+Simple LCGs and RC4-derived streams are often distinguishable; stronger constructions and some VCSEL-based QRNG streams are not, even with relatively large networks.
+Longer sequence windows and CNN architectures improve discrimination.
+This line of work (see also earlier ANN-based CSPRNGs tests~\cite{schindler2018testing}) suggests a complementary Stage-1 metric for ML experiments: if a neural distinguisher cannot tell stream $A$ from stream $B$, expecting large Stage-2 task differences becomes less plausible \emph{a priori}.
+
+Li and Zeng~\cite{li2026transformers} show that Transformers can simulate classical PRNGs (LCG, Mersenne Twister) and generate sequences that pass most NIST tests, while remaining subject to prediction-attack evaluation.
+This blurs the boundary between ``ML using RNGs'' and ``ML as RNGs,'' but does not resolve whether NIST-passing streams differentially affect training.
+
+\subsection{Seed-induced variance without changing the generator}
+
+A large body of work documents that \emph{seeds alone} induce non-trivial variance:
+\begin{itemize}[leftmargin=*]
+  \item Summers and Dinneen~\cite{summers2021nondeterminism} show extreme optimisation instability: perturbing a single weight by machine epsilon can rival other nondeterminism sources.
+  \item Zhuang et al.~\cite{zhuang2022randomness} separate algorithmic randomness from implementation/tooling noise (cuDNN, hardware).
+  \item Pham et al.~\cite{pham2022quantifying} quantify contributions from initialisation, shuffling, dropout, and splits; data splitting often dominates.
+  \item Recent LLM fine-tuning studies show both macro (metric) and micro (per-example) seed effects~\cite{li2025macroseeds}.
+\end{itemize}
+These results set a floor on detectable RNG-quality effects: any quality-driven delta must exceed seed-driven variance under the same evaluation protocol, or be estimated with adequate replication.
+
+\subsection{Security angle}
+
+Dahiya et al.~\cite{dahiya2024mlrandomness} argue that ML needs stronger randomness standards, showing PRNG-related attack surfaces in contexts such as randomized smoothing.
+This is orthogonal to accuracy but relevant if large shared bit archives are reused across experiments without cryptographic hygiene.
+
+\subsection{Interim summary}
+
+Empirically, the ML literature supports three soft conclusions:
+\begin{enumerate}[leftmargin=*]
+  \item Weak or biased randomness can matter (especially as a negative control).
+  \item Among strong PRNGs/QRNGs, task-level differences are small, unstable across papers, and often not significant under careful tests~\cite{heese2024biased,antunes2025influence}.
+  \item Site of injection (init vs.\ dropout vs.\ shuffle) is under-explored relative to generator brand names.
+\end{enumerate}

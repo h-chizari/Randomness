@@ -1,0 +1,42 @@
+\section{Introduction}
+\label{sec:intro}
+
+\subsection{Motivation}
+
+Machine learning systems are stochastic artefacts.
+Even when the architecture, loss, and hyperparameters are fixed, training outcomes vary with the realisation of random draws used for initialisation, data ordering, regularisation masks, and augmentation~\cite{summers2021nondeterminism,zhuang2022randomness,pham2022quantifying}.
+Optimisation methods themselves---stochastic gradient descent (SGD) and its adaptive variants, as well as population-based metaheuristics---are defined by how they inject and structure randomness into the search process~\cite{keskar2017largebatch,smith2018bayesian,zhu2019anisotropic}.
+
+A separate, older literature asks a different question: when is a sequence of bits ``random enough''?
+Statistical test batteries such as NIST~SP~800-22, Dieharder, and TestU01~\cite{bassham2010nist,lecuyer2007testu01} and, more recently, neural distinguishers~\cite{valle2024assessing} attempt to answer that question for cryptography and simulation.
+The present review sits at the junction of these two traditions.
+If an organisation holds \emph{very large binary random archives}---from high-quality PRNGs, hardware TRNGs, or QRNGs---can differences in measured bitstream quality be shown to matter for AI/ML task quality, training stability, or optimiser behaviour?
+
+\subsection{Scope}
+
+We review and critically assess work on:
+\begin{enumerate}[leftmargin=*]
+  \item definitions and measurement of RNG quality (classical batteries; entropy estimates; ML-based tests);
+  \item substitution of PRNG / TRNG / QRNG sources into neural network training (initialisation, dropout, shuffling);
+  \item the role of randomness and noise structure in first-order optimisers (SGD, Adam and relatives) and in metaheuristics (GA, PSO, DE);
+  \item reproducibility, tooling nondeterminism, and reporting standards for seed-sensitive studies.
+\end{enumerate}
+We deliberately treat \emph{seed sensitivity} (different seeds of the same generator) and \emph{generator quality} (different statistical properties of the source) as distinct constructs; conflating them is a recurring methodological failure in the literature (\S\ref{sec:critique}).
+
+\subsection{Contributions of this review}
+
+\begin{enumerate}[leftmargin=*]
+  \item A structured map of how randomness enters ML and optimisation pipelines, and which notions of ``quality'' are claimed to matter.
+  \item A critical synthesis of conflicting empirical claims (especially QRNG vs.\ PRNG), with attention to statistical power, effect size, and confounds.
+  \item An explicit gap analysis connecting cryptographic RNG evaluation, framework PRNG implementations, and optimiser noise theory.
+  \item A research agenda for controlled experiments with large binary random bitstreams (\S\ref{sec:agenda}), aligned with the accompanying project plan.
+\end{enumerate}
+
+\subsection{Organisation}
+
+Section~\ref{sec:background} fixes terminology and quality metrics.
+Section~\ref{sec:rngml} reviews RNG substitution studies in ML.
+Section~\ref{sec:opt} reviews randomness in stochastic and metaheuristic optimisation.
+Section~\ref{sec:critique} offers a critical synthesis.
+Section~\ref{sec:gaps} states research gaps.
+Section~\ref{sec:agenda} outlines a concrete experimental programme.

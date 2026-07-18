@@ -4,7 +4,9 @@
 
 Compare whether **binary random bitstreams of different statistical quality** change outcomes in common AI/ML stochastic components (weight init, dropout, shuffling, data augmentation), using your large bit archives plus small local pilot files.
 
-This plan is grounded in peer-reviewed / preprint literature (see §References). Prior work shows: (1) RNG choice can change learning dynamics, but effects are often **dataset- and task-dependent**; (2) framework PRNG implementations differ even when algorithm names match; (3) valid comparisons need **many seeds** and non-parametric tests.
+A full critical literature review (ML + optimisation + gaps) lives in **[`paper/`](../paper/)** (`paper/main.tex`).
+
+This plan is grounded in peer-reviewed / preprint literature (see §References and the TeX review). Prior work shows: (1) RNG choice can change learning dynamics, but effects are often **dataset- and task-dependent**; (2) framework PRNG implementations differ even when algorithm names match; (3) valid comparisons need **many seeds** and non-parametric tests.
 
 ---
 

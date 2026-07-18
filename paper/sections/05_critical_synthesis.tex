@@ -1,0 +1,58 @@
+\section{Critical Synthesis}
+\label{sec:critique}
+
+We organise the critique around recurring failure modes rather than paper-by-paper commentary.
+
+\subsection{Construct confusion: seeds, sources, and quality}
+
+Many papers advertise ``effects of randomness'' while only sweeping seeds of a single PRNG.
+Others swap QRNG for PRNG without publishing statistical profiles of either stream.
+A third group publishes Crush scores for framework generators without measuring downstream task metrics.
+These are three different scientific objects:
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Seed variance} --- sampling variability within a family;
+  \item \textbf{Source identity} --- hardware versus algorithm brand;
+  \item \textbf{Measured quality} --- test-battery / entropy / distinguisher scores.
+\end{enumerate}
+Only (iii) supports claims about ``quality of randomness.''
+Source identity (ii) is a proxy that fails when a QRNG is biased~\cite{heese2024biased} or a PRNG is cryptographically strong.
+
+\subsection{Contradictory ML substitution results}
+
+Bird et al.~\cite{bird2019softcomputing} suggest meaningful QRNG benefits on some tasks; Heese et al.~\cite{heese2024biased} find null results even under hardware bias; Koivu et al.~\cite{koivu2022dropout} find signed effects that flip with dataset; Antunes et al.~\cite{antunes2025influence} argue for a quality floor with flatness above it.
+These results are not necessarily logically inconsistent---effect modifiers (task difficulty, site of injection, stream length, preprocessing) can reconcile them---but the literature does not yet identify those modifiers with any reliability.
+
+\subsection{Underpowered comparisons and selective reporting}
+
+Effect sizes in RNG-substitution studies are often $<1$--$3\%$ absolute accuracy.
+Reporting guidance for neural comparisons warns that small effects require large seed counts and non-parametric tests; otherwise conclusions are fragile or even adversarially selectable~\cite{akesson2024reporting}.
+Few RNG-quality papers meet that bar.
+Learning-curve plots without uncertainty bands, and ``QRNG wins'' headlines without multiplicity correction, remain common.
+
+\subsection{Site confounding}
+
+Initialisation, shuffle, dropout, and augmentation are frequently randomised together under one global seed.
+Attributing a metric change to ``QRNG initialisation'' is then invalid if data order also changed.
+Tooling nondeterminism (GPU reductions, cuDNN autotune) adds a further confound~\cite{zhuang2022randomness}.
+Proper designs freeze all sites but one and disable nondeterministic kernels for confirmatory runs.
+
+\subsection{Theory--practice mismatch on optimisation noise}
+
+SGD theory cares about the \emph{covariance geometry} of gradient noise~\cite{zhu2019anisotropic,wu2022alignment}.
+RNG test batteries care about uniformity and serial independence of bits.
+No established reduction shows that passing BigCrush implies preserving SGD's alignment property under finite-precision shuffling of a real dataset.
+Conversely, a weak LCG might still induce adequate mixing on a small dataset for few epochs.
+The community lacks a \emph{task-relevant} quality metric for optimiser noise.
+
+\subsection{Threshold phenomena versus romanticism about true randomness}
+
+Across PSO~\cite{bastos2009pso}, framework PRNG studies~\cite{antunes2025influence}, and careful QRNG null results~\cite{heese2024biased}, a pragmatic pattern emerges: below a quality floor, algorithms break or degrade; above it, returns diminish quickly.
+This undercuts both (a)~neglect of RNG choice (weak generators do hurt) and (b)~strong marketing claims that QRNG/TRNG must improve deep learning whenever substituted.
+The interesting scientific question is the shape of the quality--utility curve---and whether ML sites differ in their floors.
+
+\subsection{Publication and tooling biases}
+
+Positive QRNG-advantage stories are more surprising than nulls; nulls may be under-published.
+Industry stacks default to fast counter-based PRNGs without exposing bitstream diagnostics.
+Energy and performance studies~\cite{antunes2024reproducibility} further push practitioners toward speed, not quality telemetry.
+As a result, large random archives held by labs are rarely evaluated in ML loops with the same rigour used in cryptographic certification.

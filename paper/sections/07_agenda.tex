@@ -1,0 +1,51 @@
+\section{Research Agenda}
+\label{sec:agenda}
+
+We outline a programme tailored to laboratories that hold large binary random archives and wish to test quality effects in AI/ML and optimisation.
+Details of file formats and pilot generators appear in the accompanying project documentation; here we state the scientific protocol.
+
+\subsection{Two-stage design}
+
+\paragraph{Stage A --- Characterise.}
+For each archive (and for negative/positive controls: biased bits, weak LCG, MT19937, OS CSPRNG):
+\begin{itemize}[leftmargin=*]
+  \item run a cheap statistical suite (frequency, runs, serial correlation, byte $\chi^2$, Shannon entropy);
+  \item run NIST SP~800-22 and/or TestU01 SmallCrush/Crush as data volume allows;
+  \item optionally train a neural distinguisher against a golden reference~\cite{valle2024assessing};
+  \item assign a tier label $T0$--$T4$ from fail-basic to golden-archive.
+\end{itemize}
+
+\paragraph{Stage B --- Inject.}
+Implement a \texttt{BitstreamRNG} that consumes archive bytes without wraparound in confirmatory runs.
+Ablate one stochastic site at a time (recommended order: dropout $\rightarrow$ shuffle $\rightarrow$ initialisation $\rightarrow$ augmentation).
+Cross with optimiser family $\{$\textrm{SGD}, \textrm{SGD+momentum}, \textrm{Adam}$\}$ on at least one vision and one tabular/noisy task.
+
+\subsection{Minimal decisive experiment}
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Negative control check.} Biased ($p=0.6$) bits versus OS CSPRNG on dropout masks for an MLP on Fashion-MNIST; $n=10$ runs.
+  If no difference in accuracy or train--test gap, debug injection before claiming nulls among strong sources.
+  \item \textbf{Quality ladder.} Weak LCG, MT19937, OS CSPRNG, and one large archive shard; same protocol; $n\geq 25$ if observed gaps $<2.5\%$~\cite{akesson2024reporting}.
+  \item \textbf{Optimiser interaction.} Repeat the ladder under SGD and Adam with fixed hyperparameters other than the bitstream-driven site.
+\end{enumerate}
+
+\subsection{Statistical protocol}
+
+Predefine seeds $\{0,\ldots,n-1\}$ for any residual PRNG needs; use Brunner--Munzel or Mann--Whitney tests; report Cliff's $\delta$ or Cohen's $d$; correct for multiplicity across sources within a site (Holm).
+Publish full result tables and bitstream manifests (hashes, bytes consumed).
+
+\subsection{Success criteria for the research programme}
+
+The programme succeeds scientifically even if most strong sources are indistinguishable:
+\begin{itemize}[leftmargin=*]
+  \item a measured quality--utility curve (possibly flat above a floor);
+  \item site and optimiser interaction maps;
+  \item open artefacts enabling replication (G1, G8).
+\end{itemize}
+A positive finding (tier predicts accuracy/stability) would justify operational use of high-entropy archives in training; a well-powered null among $T2$--$T4$ sources would equally inform practitioners to invest elsewhere (data, hyperparameters) once a quality floor is met.
+
+\subsection{Conclusion}
+
+Randomness is indispensable to ML and optimisation, yet ``quality of randomness'' remains an underspecified lever.
+The literature shows clear harm from weak generators, suggestive but conflicted benefits from QRNG/TRNG substitutions, and a mature theory of \emph{structured} optimiser noise that has not been connected to bitstream diagnostics.
+Closing that gap requires experiments that measure quality, isolate stochastic sites, cross optimiser families, and power their statistics---precisely the setting for which large binary random archives are an asset rather than a curiosity.
